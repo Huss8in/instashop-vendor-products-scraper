@@ -7,6 +7,9 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -31,9 +34,20 @@ BASE_URL = sys.argv[1]
 service = Service(CHROMEDRIVER_PATH)
 driver = webdriver.Chrome(service=service)
 driver.get(BASE_URL)
-time.sleep(5)
+
+# ------------ Accept Cookies ------------ #
+try:
+    wait = WebDriverWait(driver, 10)
+    accept_btn = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "//button[contains(text(), 'Accept')]")
+    ))
+    accept_btn.click()
+    print("Accepted cookies")
+except:
+    print("No cookie popup found or already accepted")
 
 # ------------ Parse Categories ------------ #
+time.sleep(3)  # allow page to load after accepting cookies
 soup = BeautifulSoup(driver.page_source, "html.parser")
 categories = soup.find_all("div", class_="category-item ng-star-inserted")
 
@@ -50,7 +64,13 @@ for cat in categories:
 all_data = []
 for category in tqdm(category_links, desc="Scraping categories"):
     driver.get(category["url"])
-    time.sleep(10)
+    # Wait until products load or timeout after 15 sec
+    try:
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "product"))
+        )
+    except:
+        print(f"Timeout waiting for products in category: {category['name']}")
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
     products = soup.find_all("div", class_="product mb-4 ng-star-inserted")
@@ -73,6 +93,9 @@ driver.quit()
 
 # ------------ Convert to DataFrame ------------ #
 df = pd.DataFrame(all_data)
+
+# ------------ Save to CSV ------------ #
+df.to_csv("instashop_data.csv", index=False)
 
 # ------------ Upload to Google Sheets ------------ #
 scope = [
