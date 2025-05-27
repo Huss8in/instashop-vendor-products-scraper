@@ -50,7 +50,7 @@ time.sleep(1)
 driver.get(BASE_URL)
 time.sleep(3)
 soup = BeautifulSoup(driver.page_source, "html.parser")
-categories = soup.find_all("div", class_="category-item ng-star-inserted")[:2] # <======= 
+categories = soup.find_all("div", class_="category-item ng-star-inserted")#[:2] # <======= 
 
 category_links = []
 for cat in categories:
@@ -70,7 +70,7 @@ for category in tqdm(category_links, desc="Scraping categories"):
     
     # ------------------------------------------------------ #
     time.sleep(3)
-    product_elements = driver.find_elements(By.CSS_SELECTOR, "div.product.mb-4.ng-star-inserted")[:2] # <======= 
+    product_elements = driver.find_elements(By.CSS_SELECTOR, "div.product.mb-4.ng-star-inserted")#[:2] # <======= 
 
     # Loop through products
     for product_element in product_elements:
